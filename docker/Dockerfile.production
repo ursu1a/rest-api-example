@@ -1,0 +1,32 @@
+# Start from the official Go image
+FROM golang:1.23.1-alpine AS builder
+
+# Install required packages for the build
+RUN apk update && apk add --no-cache bash git curl
+
+# Set the Current Working Directory inside the container
+WORKDIR /app
+
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy files
+COPY . .
+
+# Open port 8080
+EXPOSE 8080
+
+# Build the Go app
+RUN go build -o main .
+
+# Create the minimal image for the container
+FROM alpine:latest
+WORKDIR /app
+
+# Copy binary file from the container
+COPY --from=builder /app/main .
+
+# Run the app
+CMD ["./main serve"]
