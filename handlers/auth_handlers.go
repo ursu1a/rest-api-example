@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 	"log"
 	"net/http"
 
@@ -29,7 +30,6 @@ type NewUser struct {
 
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
 }
 
 func HandleGoogleLogin(w http.ResponseWriter, r *http.Request) {
@@ -88,8 +88,9 @@ func HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	// Response data
 	authResponse := AuthResponse{
 		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
 	}
+
+	SaveRefreshToken(w, refreshToken)
 
 	// Insert JSON-response into client script
 	responseScript := `
@@ -174,10 +175,11 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	SaveRefreshToken(w, refreshToken)
+
 	// Response data
 	authResponse := AuthResponse{
 		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
 	}
 
 	// Send tokens in response
@@ -186,19 +188,18 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 // Refresh token
 func HandleRefreshToken(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		RefreshToken string `json:"refresh_token"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+	cookie, err := r.Cookie("refreshToken")
+	if err != nil {
+		http.Error(w, "Refresh token missing", http.StatusUnauthorized)
 		return
 	}
-	refreshToken := body.RefreshToken
+
+	refreshToken := cookie.Value
 	if refreshToken == "" {
 		http.Error(w, "Refresh token is missing", http.StatusUnauthorized)
 		return
 	}
-
+	log.Printf("Refresh token: %v", refreshToken)
 	newAccessToken, err := auth.RefreshToken(refreshToken)
 
 	if err != nil {
@@ -207,4 +208,16 @@ func HandleRefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responseJSON(w, map[string]interface{}{"access_token": newAccessToken})
+}
+
+func SaveRefreshToken(w http.ResponseWriter, refreshToken string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refreshToken",
+		Value:    refreshToken,
+		Path:     "/",
+		Expires:  time.Now().Add(7 * 24 * time.Hour),
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+	})
 }

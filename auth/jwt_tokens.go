@@ -20,7 +20,7 @@ type UserClaims struct {
 
 // Generate short-lived JWT token
 func GenerateAccessToken(userID, email string) (string, error) {
-	expirationTime := time.Now().Add(15 * time.Minute)
+	expirationTime := time.Now().Add(2 * time.Minute)
 	claims := &UserClaims{
 		UserID: userID,
 		Email: email,
