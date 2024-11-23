@@ -55,6 +55,16 @@ func SaveUpdateUser(userInfo UserInfo) (uint, error) {
 		return 0, result.Error
 	}
 
+	// Generate/update access token
+	strUserID := fmt.Sprintf("%d", user.ID)
+	refreshToken, err := GenerateRefreshToken(strUserID, userInfo.Email)
+	if err != nil {
+		return user.ID, err
+	}
+
+	user.RefreshToken = refreshToken
+	DBConn.Save(&user)
+
 	log.Printf("User with email %s was created", user.Email)
 	return user.ID, nil
 }

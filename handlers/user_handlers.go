@@ -83,7 +83,7 @@ func HandleGetUser(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if err := DBConn.First(&user, userID).Error; err != nil {
-		responseJSON(w, err.Error())
+		responseError(w, err.Error())
 		return
 	}
 

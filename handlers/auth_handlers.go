@@ -100,9 +100,7 @@ func HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	`
 
 	responseJSON, _ := json.Marshal(authResponse)
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf(responseScript, responseJSON)))
+	responseText(w, fmt.Sprintf(responseScript, responseJSON))
 }
 
 func HandleRegister(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +137,6 @@ func HandleRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleLogin(w http.ResponseWriter, r *http.Request) {
-	enableCors(&w)
 	DBConn := config.App.DB
 	var user db.User
 	var credentials Credentials
@@ -177,11 +174,14 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Response data
+	authResponse := AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
+
 	// Send tokens in response
-	responseJSON(w, map[string]string{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
-	})
+	responseJSON(w, authResponse)
 }
 
 // Refresh token

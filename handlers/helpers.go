@@ -1,9 +1,10 @@
 package handlers
+
 /* HTTP request utils */
 
 import (
-	"net/http"
 	"encoding/json"
+	"net/http"
 )
 
 func responseJSON(w http.ResponseWriter, payload interface{}) {
@@ -24,8 +25,8 @@ func responseError(w http.ResponseWriter, message string) {
 	http.Error(w, message, http.StatusInternalServerError)
 }
 
-func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-	(*w).Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
+func responseText(w http.ResponseWriter, text string) {
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(text))
 }
