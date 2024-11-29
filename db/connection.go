@@ -31,4 +31,8 @@ func Connect() *gorm.DB {
 
 func Migrate(db *gorm.DB) {
 	db.AutoMigrate(&User{})
+	err := AddGoogleIDUniqueConstraint(db)
+	if err != nil {
+		log.Fatalf("Failed to add unique constraint: %v", err)
+	}
 }
