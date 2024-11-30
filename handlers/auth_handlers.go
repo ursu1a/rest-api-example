@@ -9,9 +9,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 	"log"
 	"net/http"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
@@ -29,7 +29,7 @@ type NewUser struct {
 }
 
 type AuthResponse struct {
-	AccessToken  string `json:"access_token"`
+	AccessToken string `json:"access_token"`
 }
 
 func HandleGoogleLogin(w http.ResponseWriter, r *http.Request) {
@@ -66,13 +66,14 @@ func HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	log.Printf("You are entered to system by Google accout: %v\n", userInfo)
 
 	// Save data into database
-	userID, err := auth.SaveUpdateUser(userInfo); if err != nil {
+	userID, err := auth.SaveUpdateGoogleUser(userInfo)
+	if err != nil {
 		http.Error(w, "An error when saving user", http.StatusInternalServerError)
 		return
 	}
 
 	// Generate Access & Refresh tokens
-	strUserID := fmt.Sprintf("%d", userID)	
+	strUserID := fmt.Sprintf("%d", userID)
 	accessToken, err := auth.GenerateAccessToken(strUserID, userInfo.Email)
 	if err != nil {
 		http.Error(w, "Access token generation failed", http.StatusInternalServerError)
@@ -87,7 +88,7 @@ func HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	// Response data
 	authResponse := AuthResponse{
-		AccessToken:  accessToken,
+		AccessToken: accessToken,
 	}
 
 	SaveRefreshToken(w, refreshToken)
@@ -106,6 +107,8 @@ func HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 func HandleRegister(w http.ResponseWriter, r *http.Request) {
 	DBConn := config.App.DB
+	emailSvc := config.App.EmailSvc
+
 	var userData NewUser
 	if err := json.NewDecoder(r.Body).Decode(&userData); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -121,15 +124,24 @@ func HandleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token := auth.GenerateToken()
 	user := db.User{
-		Name:         userData.Name,
-		Email:        userData.Email,
-		PasswordHash: string(hashedPassword),
+		Name:                   userData.Name,
+		Email:                  userData.Email,
+		PasswordHash:           string(hashedPassword),
+		EmailVerificationToken: token,
 	}
 
 	// Save user in DB
 	if err := DBConn.Create(&user).Error; err != nil {
 		http.Error(w, "User already exists", http.StatusConflict)
+		return
+	}
+
+	// Send email for registration confirmation
+	err = emailSvc.SendRegistrationConfirmation(user.Email, token)
+	if err != nil {
+		http.Error(w, "Failed to send confirmation email", http.StatusInternalServerError)
 		return
 	}
 
@@ -161,6 +173,12 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check account is verified
+	if !user.EmailVerified {
+		http.Error(w, "Please complete registration process by email verification", http.StatusUnauthorized)
+		return
+	}
+
 	// Generate access & refresh tokens
 	strUserID := fmt.Sprintf("%d", user.ID)
 	accessToken, err := auth.GenerateAccessToken(strUserID, user.Email)
@@ -179,7 +197,7 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Response data
 	authResponse := AuthResponse{
-		AccessToken:  accessToken,
+		AccessToken: accessToken,
 	}
 
 	// Send tokens in response
@@ -208,6 +226,32 @@ func HandleRefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responseJSON(w, map[string]interface{}{"access_token": newAccessToken})
+}
+
+func HandleVerifyEmail(w http.ResponseWriter, r *http.Request) {
+	DBConn := config.App.DB
+	EmailSvc := config.App.EmailSvc
+	var user db.User
+
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "Token is required", http.StatusBadRequest)
+		return
+	}
+
+	// Find user in DB
+	if err := DBConn.Where("email_verification_token = ?", token).First(&user).Error; err != nil {
+		http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
+		return
+	}
+
+	// Make user as verified
+	user.EmailVerified = true
+	user.EmailVerificationToken = ""
+	DBConn.Save(&user)
+
+	EmailSvc.SendTransactionalEmail(user.Email, "Registration is complete", "Email verified successfully")
+	fmt.Println(w, "Email verified successfully")
 }
 
 func SaveRefreshToken(w http.ResponseWriter, refreshToken string) {

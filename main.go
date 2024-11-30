@@ -5,6 +5,7 @@ import (
 	"backend/cmd"
 	"backend/config"
 	"backend/db"
+	"backend/emails"
 	"log"
 )
 
@@ -14,6 +15,7 @@ func init() {
 	app.DB = db.Connect()
 	db.Migrate(app.DB)
 	app.OAuthConfig = auth.InitOAuthConfig()
+	app.EmailSvc = emails.InitEmailService()
 }
 
 func main() {

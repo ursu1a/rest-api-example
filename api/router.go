@@ -34,6 +34,7 @@ func Router() {
 	router.HandleFunc(Urls("REGISTER_PATH"), handlers.HandleRegister).Methods("POST")
 	router.HandleFunc(Urls("TOKEN_REFRESH_PATH"), handlers.HandleRefreshToken).Methods("POST")
 	router.Handle(Urls("GET_USER_PATH"), protectedRoute(http.HandlerFunc(handlers.HandleGetUser)))
+	router.HandleFunc(Urls("VERIFY_EMAIL_PATH"), handlers.HandleVerifyEmail)
 
 	// Users routes
 	router.HandleFunc(Urls("USERS_ALL_PATH"), handlers.GetAllUsers)

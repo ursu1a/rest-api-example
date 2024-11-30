@@ -35,14 +35,15 @@ func InitOAuthConfig() *oauth2.Config {
 	return &config
 }
 
-func SaveUpdateUser(userInfo UserInfo) (uint, error) {
+func SaveUpdateGoogleUser(userInfo UserInfo) (uint, error) {
 	DBConn := config.App.DB
 	user := db.User{
-		GoogleID:  userInfo.ID,
-		Email:     userInfo.Email,
-		Name:      userInfo.Name,
-		Picture:   userInfo.Picture,
-		UpdatedAt: time.Now(),
+		GoogleID:      &userInfo.ID,
+		Email:         userInfo.Email,
+		Name:          userInfo.Name,
+		Picture:       userInfo.Picture,
+		EmailVerified: true,
+		UpdatedAt:     time.Now(),
 	}
 
 	// Use create with conflict method to create or update the user
