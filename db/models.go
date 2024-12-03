@@ -13,6 +13,8 @@ type User struct {
 	PasswordHash           string
 	EmailVerified          bool
 	EmailVerificationToken string
+	ResetToken             string
+	ResetTokenExpiry       time.Time
 	Picture                string
 	CreatedAt              time.Time `gorm:"default:current_timestamp"`
 	UpdatedAt              time.Time `gorm:"default:current_timestamp"`

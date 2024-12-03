@@ -28,6 +28,15 @@ type NewUser struct {
 	Password string `json:"password"`
 }
 
+type PasswordRecovery struct {
+	Email string `json:"email"`
+}
+
+type UpdatePassword struct {
+	Token    string `json:"token"`
+	Password string `json:"password"`
+}
+
 type AuthResponse struct {
 	AccessToken string `json:"access_token"`
 }
@@ -252,6 +261,69 @@ func HandleVerifyEmail(w http.ResponseWriter, r *http.Request) {
 
 	EmailSvc.SendTransactionalEmail(user.Email, "Registration is complete", "Email verified successfully")
 	fmt.Println(w, "Email verified successfully")
+}
+
+func HandleRequestResetPassword(w http.ResponseWriter, r *http.Request) {
+	DBConn := config.App.DB
+	EmailSvc := config.App.EmailSvc
+	var user db.User
+	var requestedUser PasswordRecovery
+
+	if err := json.NewDecoder(r.Body).Decode(&requestedUser); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Find user in DB
+	if err := DBConn.Where("email = ?", requestedUser.Email).First(&user).Error; err != nil {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Generate token
+	token := auth.GenerateToken()
+	expiry := time.Now().Add(1 * time.Hour)
+
+	// Save token in database
+	user.ResetToken = token
+	user.ResetTokenExpiry = expiry
+	DBConn.Save(user)
+
+	EmailSvc.SendPasswordReset(user.Email, token)
+	fmt.Println(w, "Password reset email sent")
+}
+
+func HandleUpdatePassword(w http.ResponseWriter, r *http.Request) {
+	DBConn := config.App.DB
+	var user db.User
+	var requestedUser UpdatePassword
+
+	if err := json.NewDecoder(r.Body).Decode(&requestedUser); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Check token
+	err := DBConn.Where("reset_token = ?", requestedUser.Token).Find(&user).Error
+	if err != nil || time.Now().After(user.ResetTokenExpiry) {
+		http.Error(w, "Invalid or expired token", http.StatusBadRequest)
+		return
+	}
+
+	// Get password hash
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(requestedUser.Password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Could not hash password", http.StatusInternalServerError)
+		return
+	}
+
+	// Update password and remove token
+	user.PasswordHash = string(hashedPassword)
+	user.ResetToken = ""
+	user.ResetTokenExpiry = time.Time{}
+	DBConn.Save(&user)
+
+	fmt.Println(w, "New password successfully set")
 }
 
 func SaveRefreshToken(w http.ResponseWriter, refreshToken string) {

@@ -63,7 +63,7 @@ func (s *EmailService) SendRegistrationConfirmation(to string, token string) err
 // Reset password email
 func (s *EmailService) SendPasswordReset(to string, token string) error {
 	frontAddress := os.Getenv("FRONTEND_ADDRESS")
-	link := fmt.Sprintf("%s/reset-password?token=%v", frontAddress, token)
+	link := fmt.Sprintf("%s/update-password?token=%v", frontAddress, token)
 
 	body := fmt.Sprintf(`
 		<h1>Password reset</h1>
