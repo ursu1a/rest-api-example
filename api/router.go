@@ -1,7 +1,6 @@
 package api
 
 import (
-	"backend/config"
 	"backend/handlers"
 	"backend/middleware"
 	"fmt"
@@ -11,17 +10,14 @@ import (
 )
 
 func NotFound(w http.ResponseWriter, req *http.Request) {
-	message := fmt.Sprintf("Route not found: \"%s\"", req.URL.Path)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte(message))
+	http.Error(w, fmt.Sprintf(`{"error": "Route not found: %s"}`, req.URL.Path), http.StatusNotFound)
 }
 
 func securedHandler(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte("Entered to secure path"))
 }
 
-func Router() {
+func InitRouter() *mux.Router {
 	router := mux.NewRouter()
 
 	// Protected routes
@@ -50,5 +46,5 @@ func Router() {
 	router.NotFoundHandler = http.HandlerFunc(NotFound)
 
 	http.Handle("/", router)
-	config.App.Router = router
+	return router
 }

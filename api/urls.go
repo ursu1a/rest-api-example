@@ -1,10 +1,10 @@
 package api
 
-import "os"
+import "backend/utils"
 
 var urls = map[string]string{
-	"GOOGLE_OAUTH_PATH":           os.Getenv("GOOGLE_OAUTH_PATH"),
-	"GOOGLE_OAUTH_CALLBACK_PATH":  os.Getenv("GOOGLE_OAUTH_CALLBACK_PATH"),
+	"GOOGLE_OAUTH_PATH":           utils.GetEnv("GOOGLE_OAUTH_PATH", "/api/auth/google"),
+	"GOOGLE_OAUTH_CALLBACK_PATH":  utils.GetEnv("GOOGLE_OAUTH_CALLBACK_PATH", "/api/auth/google/callback"),
 	"TOKEN_REFRESH_PATH":          "/api/auth/refresh",
 	"LOGIN_PATH":                  "/api/login",
 	"REGISTER_PATH":               "/api/register",

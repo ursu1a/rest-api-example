@@ -12,7 +12,7 @@ import (
 	"log"
 	"net/http"
 	"time"
-
+	"gorm.io/gorm/clause"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 )
@@ -41,6 +41,13 @@ type AuthResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
+type UserInfo struct {
+	ID      string `json:"id"`
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Picture string `json:"picture"`
+}
+
 func HandleGoogleLogin(w http.ResponseWriter, r *http.Request) {
 	oauthConfig := config.App.OAuthConfig
 	// Redirect to Google authentication page
@@ -67,7 +74,7 @@ func HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 
 	// Proceed for User's information
-	var userInfo auth.UserInfo
+	var userInfo UserInfo
 	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
 		http.Error(w, "An error when decoding request", http.StatusInternalServerError)
 		return
@@ -75,7 +82,7 @@ func HandleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 	log.Printf("You are entered to system by Google accout: %v\n", userInfo)
 
 	// Save data into database
-	userID, err := auth.SaveUpdateGoogleUser(userInfo)
+	userID, err := SaveUpdateGoogleUser(userInfo)
 	if err != nil {
 		http.Error(w, "An error when saving user", http.StatusInternalServerError)
 		return
@@ -336,4 +343,29 @@ func SaveRefreshToken(w http.ResponseWriter, refreshToken string) {
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
 	})
+}
+
+func SaveUpdateGoogleUser(userInfo UserInfo) (uint, error) {
+	DBConn := config.App.DB
+	user := db.User{
+		GoogleID:      &userInfo.ID,
+		Email:         userInfo.Email,
+		Name:          userInfo.Name,
+		Picture:       userInfo.Picture,
+		EmailVerified: true,
+		UpdatedAt:     time.Now(),
+	}
+
+	// Use create with conflict method to create or update the user
+	result := DBConn.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "email"}},
+		DoUpdates: clause.AssignmentColumns([]string{"google_id", "name", "picture", "updated_at"}),
+	}).Create(&user)
+
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	log.Printf("User with email %s was created", user.Email)
+	return user.ID, nil
 }

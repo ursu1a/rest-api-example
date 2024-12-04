@@ -27,8 +27,8 @@ func runServer() {
 		Addr: fmt.Sprintf(":%s", port),
 	}
 
-	// Routing settings
-	api.Router()
+	// Init API routes
+	config.App.Router = api.InitRouter()
 
 	// Run Server
 	log.Printf("Server is starting on port %s...", port)

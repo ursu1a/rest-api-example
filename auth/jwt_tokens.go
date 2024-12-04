@@ -3,8 +3,7 @@ package auth
 /* JWT generation functions */
 
 import (
-	"log"
-	"os"
+	"backend/utils"
 	"strconv"
 	"time"
 
@@ -12,8 +11,8 @@ import (
 )
 
 // Token secrets for generating access tokens
-var jwtSecret = []byte(os.Getenv("JWT_SECRET_KEY"))
-var jwtRefreshSecret = []byte(os.Getenv("JWT_REFRESH_SECRET_KEY"))
+var jwtSecret = []byte(utils.GetEnv("JWT_SECRET_KEY", "secret"))
+var jwtRefreshSecret = []byte(utils.GetEnv("JWT_REFRESH_SECRET_KEY", "refresh"))
 
 type UserClaims struct {
 	UserID string
@@ -23,10 +22,8 @@ type UserClaims struct {
 
 // Generate short-lived JWT token
 func GenerateAccessToken(userID, email string) (string, error) {
-	mins, _ := strconv.Atoi(os.Getenv("JWT_ACCESS_TOKEN_TIME"))	
-	log.Printf("Minutes: %v", mins)
+	mins, _ := strconv.Atoi(utils.GetEnv("JWT_ACCESS_TOKEN_TIME", "15"))
 	expirationTime := time.Now().Local().Add(time.Minute * time.Duration(mins))
-	log.Printf("Expiration time: %v", expirationTime)
 	claims := &UserClaims{
 		UserID: userID,
 		Email:  email,
@@ -46,7 +43,7 @@ func GenerateAccessToken(userID, email string) (string, error) {
 
 // Generate refresh token (long lived JWT token)
 func GenerateRefreshToken(userID, email string) (string, error) {
-	hours, _ := strconv.Atoi(os.Getenv("JWT_REFRESH_TOKEN_TIME"))	
+	hours, _ := strconv.Atoi(utils.GetEnv("JWT_REFRESH_TOKEN_TIME", "24"))
 	expirationTime := time.Now().Local().Add(time.Hour * time.Duration(hours))
 	claims := &UserClaims{
 		UserID: userID,
@@ -86,6 +83,7 @@ func RefreshToken(refreshToken string) (string, error) {
 	return newAccessToken, nil
 }
 
+// Generate token for authorization processes
 func GenerateToken() string {
 	var (
 		key []byte
@@ -93,7 +91,7 @@ func GenerateToken() string {
 		s   string
 	)
 
-	key = []byte(os.Getenv("JWT_SECRET_KEY"))
+	key = jwtSecret
 	t = jwt.New(jwt.SigningMethodHS256)
 	s, _ = t.SignedString(key)
 	return s
