@@ -2,14 +2,14 @@ package middleware
 
 import (
 	"backend/auth"
+	"backend/utils"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = os.Getenv("JWT_SECRET_KEY")
+var jwtSecret = utils.GetEnv("JWT_SECRET_KEY", "your_secret_key")
 
 // Checks if the user has a valid JWT token
 func Authenticate(next http.Handler) http.Handler {

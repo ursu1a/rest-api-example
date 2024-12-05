@@ -1,6 +1,7 @@
 package emails
 
 import (
+	"backend/utils"
 	"fmt"
 	"log"
 	"os"
@@ -19,7 +20,12 @@ type EmailService struct {
 
 // Constructor for EmailService
 func InitEmailService() *EmailService {
-	port, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
+	if err := utils.CheckEnvs([]string{"SMTP_PORT", "SMTP_HOST", "SMTP_EMAIL", "SMTP_PASSWORD", "SMTP_EMAIL_SENDER"}); err != nil {
+		log.Fatalf("Error checking environment variables: %v", err)
+		return nil
+	}
+
+	port, _ := strconv.Atoi(utils.GetEnv("SMTP_PORT", ""))
 	return &EmailService{
 		SMTPHost:     os.Getenv("SMTP_HOST"),
 		SMTPPort:     port,
@@ -48,8 +54,8 @@ func (s *EmailService) sendEmail(to string, subject string, body string) error {
 
 // Send registration confirmation email
 func (s *EmailService) SendRegistrationConfirmation(to string, token string) error {
-	frontAddress := os.Getenv("FRONTEND_ADDRESS")
-	link := fmt.Sprintf("%s/verify-email?token=%v", frontAddress, token)	
+	frontAddress := utils.GetEnv("FRONTEND_ADDRESS", "http://localhost:3001")
+	link := fmt.Sprintf("%s/verify-email?token=%v", frontAddress, token)
 
 	body := fmt.Sprintf(`
 		<h1>Please confirm registration</h1>
@@ -62,7 +68,7 @@ func (s *EmailService) SendRegistrationConfirmation(to string, token string) err
 
 // Reset password email
 func (s *EmailService) SendPasswordReset(to string, token string) error {
-	frontAddress := os.Getenv("FRONTEND_ADDRESS")
+	frontAddress := utils.GetEnv("FRONTEND_ADDRESS", "http://localhost:3001")
 	link := fmt.Sprintf("%s/update-password?token=%v", frontAddress, token)
 
 	body := fmt.Sprintf(`

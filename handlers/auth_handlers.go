@@ -233,7 +233,6 @@ func HandleRefreshToken(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Refresh token is missing", http.StatusUnauthorized)
 		return
 	}
-	log.Printf("Refresh token: %v", refreshToken)
 	newAccessToken, err := auth.RefreshToken(refreshToken)
 
 	if err != nil {

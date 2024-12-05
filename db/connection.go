@@ -1,6 +1,7 @@
 package db
 
 import (
+	"backend/utils"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,11 @@ import (
 )
 
 func Connect() *gorm.DB {
+	if err := utils.CheckEnvs([]string{"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME"}); err != nil {
+		log.Fatalf("Error checking environment variables: %v", err)
+		return nil
+	}
+
 	var (
 		dbHost     = os.Getenv("DB_HOST")
 		dbPort     = os.Getenv("DB_PORT")
