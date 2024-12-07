@@ -12,11 +12,8 @@ var urls = map[string]string{
 	"VERIFY_EMAIL_PATH":           "/api/verify-email",
 	"REQUEST_RESET_PASSWORD_PATH": "/api/request-reset-password",
 	"UPDATE_PASSWORD_PATH":        "/api/update-password",
-	"USERS_ALL_PATH":              "/api/users/all",
-	"USERS_CREATE_PATH":           "/users/new",
-	"USERS_DETAIL_PATH":           "/users/{id}",
-	"USERS_DELETE_PATH":           "/users/{id}/delete",
-	"SECURE_TEST_PATH":            "/secure/test",
+	"PROFILE_UPDATE_PATH":         "/api/profile/update",
+	"ACCOUNT_DELETE_PATH":         "/api/account/delete",
 }
 
 var Urls = func(key string) string {
