@@ -358,7 +358,7 @@ func SaveUpdateGoogleUser(userInfo UserInfo) (uint, error) {
 	// Use create with conflict method to create or update the user
 	result := DBConn.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "email"}},
-		DoUpdates: clause.AssignmentColumns([]string{"google_id", "name", "picture", "updated_at"}),
+		DoUpdates: clause.AssignmentColumns([]string{"google_id", "updated_at"}),
 	}).Create(&user)
 
 	if result.Error != nil {
