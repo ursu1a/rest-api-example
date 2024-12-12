@@ -11,6 +11,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+/**
+*
+* Command to create a database dump
+* @param filename string
+*
+* Example: backend export /tmp/<file_name>.json
+ */
 var exportCmd = &cobra.Command{
 	Use:   "export [file]",
 	Short: "Export data from the database to a JSON file",

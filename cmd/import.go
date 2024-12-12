@@ -15,7 +15,7 @@ import (
 * Command for creating a database from a JSON dump
 * @param filename string
 *
-* Example: go run ./main.go import fixtures/<file_name>.json
+* Example: backend import fixtures/<file_name>.json
  */
 var importCmd = &cobra.Command{
 	Use:   "import [file]",
